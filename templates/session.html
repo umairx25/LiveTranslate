@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Flask_Chat_App</title>
+</head>
+<body>
+    <h1>
+        LiveTranslate
+    </h1>
+
+    <h3>
+        A live chat where you get immediate translation of other user's text
+        in your own language!
+    </h3>
+
+  <form action="" method="POST">
+    <input type="text" class="username" placeholder="User Name"/>
+    <input type="text" class="message" placeholder="Type your message here"/>
+    <input type="submit"/>
+  </form>
+
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.min.js"></script>
+  <script type="text/javascript"> 
+    var socket = io.connect('http://' + document.domain + ':' + location.port); 
+
+    socket.on( 'connect', function() {
+      socket.emit( 'my event', {
+        data: 'User Connected'
+      } )
+      var form = $( 'form' ).on( 'submit', function( e ) {
+        e.preventDefault()
+        let user_name = $( 'input.username' ).val()
+        let user_input = $( 'input.message' ).val()
+        socket.emit( 'my event', {
+          user_name : user_name,
+          message : user_input
+        } )
+        $( 'input.message' ).val( '' ).focus()
+      } )
+    } )
+
+    socket.on( 'my response', function( msg ) {
+      console.log( msg )
+      const Checkbox = document.getElementById('trans');
+
+      Checkbox.addEventListener('change', e => {
+        if(e.target.checked === true) {
+            is_checked = true
+            console.log(is_checked)
+        }
+        else{
+            is_checked = false
+            console.log(is_checked)
+        }
+      })
+
+      if (typeof msg.user_name !== 'undefined' && msg.message !== '') {
+        $('h3').remove();
+        $('div.message_holder').append('<div><b style="color: #000">' + msg.user_name + '</b> ' + msg.message + '</div>');
+    if (is_checked) {
+        const selectElement = document.getElementById('Languages');
+        const language = selectElement.value;
+
+        $.ajax({
+            url: '/translate', // Update the URL to match your Flask route
+            method: 'POST',
+            data: {
+                message: msg.message,
+                language: language,
+                user: msg.user_name,
+            },
+            success: function(response) {
+    // Handle the response from the server
+    var messages = response.translated_message;
+    for (var i = 0; i < messages.length; i++) {
+        $('div.message_holder').append('<div><b style="color: #000">' + msg.user_name + '</b> ' + '(Translated): ' + messages[i] + '</div>');
+    }
+},
+
+            error: function(xhr, status, error) {
+                // Handle errors if any
+                console.error(error);
+            }
+        });
+    } 
+}});
+
+  </script>
+
+    <input type="checkbox" id="trans">
+    <label for="my-toggle">Translate</label>
+
+    <label for="Languages">Pick a language:</label>
+    <select name="Languages" id="Languages">
+    <ul>
+        {% for code, lang in languages.items() %}
+            <option value="{{ lang }}">{{ code }}</option> 
+        {% endfor %}
+        </ul>
+    </select>
+  
+  <h3 style='color: #ccc;font-size: 30px;'>Your messages will show up here...</h3>
+  <div class="message_holder"></div>
+
+</body>
+</html>
